@@ -1,4 +1,3 @@
-# ============================================================
 # MAIN.PY - The Main Game Loop
 # ============================================================
 #
@@ -26,11 +25,21 @@ import pygame
 from constants import *
 
 # Import a logger that tracks game state (helps with debugging)
-from logger import log_state
+from logger import log_state, log_event
 
 # Import our Player class from the player.py file
 from player import Player
 
+# Import Asteroid
+from asteroid import Asteroid
+
+# Import AsteroidField
+from asteroidfield import AsteroidField
+
+import sys
+
+# Import Shot (the player's bullets)
+from shot import Shot
 
 # --------------------------------------------------------
 # STARTUP - Print game information
@@ -70,11 +79,28 @@ def main():
     # (SCREEN_WIDTH, SCREEN_HEIGHT) is the window size in pixels
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+    # Created 3 groups
+    updatable = pygame.sprite.Group()
+    drawable = pygame.sprite.Group()
+    shots = pygame.sprite.Group()
+
+    # So that new Players automatically join the groups
+    Player.containers = (updatable, drawable)
+
+    # For the shots from the player
+    Shot.containers = (shots, updatable, drawable)
+
     # Create a Player object in the center of the screen
     # SCREEN_WIDTH / 2 gives us the middle horizontally
     # SCREEN_HEIGHT / 2 gives us the middle vertically
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
+    # Create another group for asteroids
+    asteroids = pygame.sprite.Group()
+    Asteroid.containers = (asteroids, updatable, drawable)
+
+    AsteroidField.containers = (updatable,)
+    AsteroidField()
     # Delta time - tracks how long each frame takes
     # We initialize it to 0 for the first frame
     dt = 0
@@ -119,7 +145,10 @@ def main():
         # --------------------------------------------------------
         # UPDATE - Move the player based on key presses
         # --------------------------------------------------------
-        player.update(dt)
+        # Player.update(dt)
+
+        # Updates all sprites
+        updatable.update(dt)
 
         # --------------------------------------------------------
         # DRAW - Render graphics
@@ -128,10 +157,24 @@ def main():
         # This erases the previous frame so we can draw the new one
         screen.fill("black")
 
+        for asteroid in asteroids:
+            for shot in shots:
+                if player.collides_with(asteroid):
+                    log_event("player_hit")
+                    print("Game Over")
+                    sys.exit()
+                if shot.collides_with(asteroid):
+                    shot.kill()
+                    asteroid.split()
+                    log_event("asteroid_shot")
         # Step 2: Draw the player ship on the screen
         # We call the player's draw method and pass it the screen
         # This draws the white triangle at the player's position
-        player.draw(screen)
+        # player.draw(screen)
+
+        # loop over all drawables and draw them individually
+        for thing in drawable:
+            thing.draw(screen)
 
         # Step 3: Update the display
         # pygame.display.flip() shows everything we just drew

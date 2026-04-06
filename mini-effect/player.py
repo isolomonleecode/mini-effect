@@ -21,10 +21,20 @@ from circleshape import CircleShape
 # Import game constants we'll need
 # PLAYER_RADIUS: How big the player ship is
 # LINE_WIDTH: How thick the ship's lines should be
-from constants import PLAYER_RADIUS, LINE_WIDTH, PLAYER_TURN_SPEED, PLAYER_SPEED
+from constants import (
+    PLAYER_RADIUS,
+    LINE_WIDTH,
+    PLAYER_TURN_SPEED,
+    PLAYER_SPEED,
+    PLAYER_SHOOT_SPEED,
+    PLAYER_SHOOT_COOLDOWN_SECONDS,
+)
 
 # Import pygame for game features (Vector2, drawing, etc.)
 import pygame
+
+# Import the Shot class so we can create bullets
+from shot import Shot
 
 
 # ============================================================
@@ -68,6 +78,10 @@ class Player(CircleShape):
         # Rotation is measured in degrees:
         # 0 = up, 90 = right, 180 = down, 270 = left
         self.rotation = 0
+
+        # Track how long until the player can shoot again
+        # Starts at 0 so the player can shoot immediately
+        self.shoot_timer = 0
 
     # --------------------------------------------------------
     # METHOD: triangle
@@ -170,6 +184,9 @@ class Player(CircleShape):
         Args:
             dt: Delta time in seconds (time since last frame)
         """
+        # Decrease the shoot timer each frame (counts down over time)
+        self.shoot_timer -= dt
+
         # pygame.key.get_pressed() returns a dictionary of all keys
         # Each key is mapped to True if it's currently held down, False otherwise
         keys = pygame.key.get_pressed()
@@ -194,9 +211,28 @@ class Player(CircleShape):
             # Pass POSITIVE dt to move backward
             self.move(-dt)
 
+        # Check if the Space key is pressed (shoot)
+        if keys[pygame.K_SPACE]:
+            # Pass SHOOT to fire
+            self.shoot()
+
     def move(self, dt):
         unit_vector = pygame.Vector2(0, 1)
         rotated_vector = unit_vector.rotate(self.rotation)
         rotated_with_speed_vector = rotated_vector * PLAYER_SPEED * dt
         self.position += rotated_with_speed_vector
-        
+
+    def shoot(self):
+        # If the timer is greater than 0, the weapon is still cooling down
+        if self.shoot_timer > 0:
+            return  # Don't shoot yet!
+
+        # Set the timer so the player can't shoot again until it counts down
+        self.shoot_timer = PLAYER_SHOOT_COOLDOWN_SECONDS
+
+        # Create bullet at player's position
+        shot = Shot(self.position.x, self.position.y)
+        # Get direction player faces
+        forward = pygame.Vector2(0, 1).rotate(self.rotation)
+        # Make it fly that way
+        shot.velocity = forward * PLAYER_SHOOT_SPEED

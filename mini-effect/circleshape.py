@@ -18,6 +18,8 @@ import pygame
 # (We're not using it in this file yet, but Player will!)
 from constants import LINE_WIDTH
 
+import logger
+
 
 # ============================================================
 # CLASS: CircleShape
@@ -104,3 +106,26 @@ class CircleShape(pygame.sprite.Sprite):
         """
         # Placeholder - child classes will override this
         pass
+
+    # --------------------------------------------------------
+    # METHOD: collides_with
+    # Check if this shape collides with another shape
+    # --------------------------------------------------------
+    def collides_with(self, other):
+        """
+        Check if this circle collides with another circle.
+
+        Two circles collide when the distance between their centers
+        is less than the sum of their radii.
+
+        Args:
+            other: Another CircleShape object to check against
+
+        Returns:
+            True if the circles overlap (collide), False otherwise
+        """
+        # Get the distance between the centers of both circles
+        distance = self.position.distance_to(other.position)
+
+        # They collide if distance is less than the sum of their radii
+        return distance < self.radius + other.radius
